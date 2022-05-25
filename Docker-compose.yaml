@@ -1,0 +1,71 @@
+version: "3"
+
+services:
+  django:
+    container_name: django
+    image: admin_panel
+    command: [ "sh", "docker-entrypoint.sh" ]
+    volumes:
+      - ./app:/app
+      - static_volume:/app/static
+    expose:
+      - $DJANGO_PORT
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+      - migration
+#    django:
+#      container_name: django
+#      build: .
+#      command: [ "sh", "docker-entrypoint.sh" ]
+#        volumes:
+#          - ./app:/app
+#          - static_volume:/app/static
+#        expose:
+#          - $DJANGO_PORT
+#        env_file:
+#          - .env
+#        depends_on:
+#          - postgres
+#          - migration
+
+  migration:
+      container_name: migration
+      build: .
+      command: [ 'sh','docker-entrypoint.sh' ]
+      env_file:
+        - .env
+      depends_on:
+        - postgres
+      volumes:
+        - ./app:/app
+        - static_volume:/app/static
+
+  postgres:
+    container_name: postgres_test
+    image: postgres:13-alpine3.15
+    volumes:
+      - postgres_volume:/var/lib/postgresql/data/
+    expose:
+      - $POSTGRES_PORT
+    env_file:
+      - .env
+
+  nginx:
+    container_name: nginx
+    build: ./nginx
+    env_file:
+      - .env
+    volumes:
+      - static_volume:/app/static
+    ports:
+      - ${EXTERNAL_PORT}:${INTERNAL_PORT}
+    depends_on:
+      - django
+      - migration
+
+volumes:
+  postgres_volume:
+  static_volume:
+
